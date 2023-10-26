@@ -19,10 +19,6 @@ const retryPolicy = Schedule.exponential("10 millis").pipe(
   Schedule.whileOutput(Duration.lessThan("3 seconds"))
 );
 
-const withCounter = Metric.counter("hello_world_counter").pipe(
-  Metric.trackAll(1)
-);
-
 export const makeTodos = Effect.gen(function* (_) {
   return {
     getTodos: Effect.sync(() => [
@@ -33,9 +29,9 @@ export const makeTodos = Effect.gen(function* (_) {
           ? Effect.unit
           : Effect.fail(new GetTodoError({ message: "failure to get todos" }))
       ),
-      Effect.withSpan("getTodosRandom"),
-      withCounter
-      //Effect.retry(retryPolicy)
+      Metric.trackErrorWith(Metric.counter("fetchTodosErrorCount"), () => 1),
+      Effect.withSpan("fetchTodos"),
+      Effect.retry(retryPolicy)
     ),
   };
 });

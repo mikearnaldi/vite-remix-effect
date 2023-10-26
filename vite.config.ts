@@ -14,9 +14,9 @@ export default defineConfig({
   build: {
     outDir: "build",
     copyPublicDir: false,
-    rollupOptions: {
-      external: [/@opentelemetry.*/, /esbuild/],
-    },
+  },
+  optimizeDeps: {
+    include: ["@opentelemetry/otlp-proto-exporter-base"],
   },
   publicDir: "./public",
 });

@@ -1,9 +1,11 @@
 import * as NodeSdk from "@effect/opentelemetry/NodeSdk";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
-import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
-import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
-import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { Config, ConfigSecret, Effect, Layer } from "effect";
+import {
+  BatchSpanProcessor,
+  OTLPMetricExporter,
+  OTLPTraceExporter,
+  PeriodicExportingMetricReader,
+} from "~/lib/otel";
 
 export const HoneycombConfig = Config.nested("HONEYCOMB")(
   Config.all({
@@ -32,7 +34,9 @@ export const TracingLive = Layer.unwrapEffect(
     });
     return NodeSdk.layer(() => ({
       resource: { serviceName },
-      spanProcessor: new BatchSpanProcessor(traceExporter),
+      spanProcessor: new BatchSpanProcessor(traceExporter, {
+        scheduledDelayMillis: 1000,
+      }),
       metricReader: new PeriodicExportingMetricReader({
         exporter: metricExporter,
         exportIntervalMillis: 1000,
