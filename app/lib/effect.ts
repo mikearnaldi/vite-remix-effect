@@ -2,8 +2,9 @@ import { LoaderFunction } from "@remix-run/node";
 import { Layer, Effect, Scope, Exit, Runtime, Context, Either } from "effect";
 import { TodosLive } from "~/services/Todos";
 import * as Schema from "@effect/schema/Schema";
+import { TracingLive } from "~/services/Tracing";
 
-const layer = Layer.mergeAll(TodosLive);
+const layer = Layer.provide(TracingLive, Layer.mergeAll(TodosLive));
 
 const makeRuntime = Effect.runPromise(
   Effect.gen(function* ($) {
@@ -51,6 +52,17 @@ export const LoaderContext = Context.Tag<
   RequestContext,
   Parameters<LoaderFunction>[0]
 >("@services/LoaderContext");
+
+export const orThrow = <E, A>(
+  value:
+    | { readonly _tag: "Left"; readonly left: E }
+    | { readonly _tag: "Right"; readonly right: A }
+): A => {
+  if (value._tag === "Right") {
+    return value.right;
+  }
+  throw value.left;
+};
 
 export const effectLoader: {
   <I, A, EI, EA>(opts: {

@@ -1,5 +1,5 @@
 import { Schema } from "@effect/schema";
-import { Context, Duration, Effect, Layer, Schedule } from "effect";
+import { Context, Duration, Effect, Layer, Metric, Schedule } from "effect";
 
 export interface Todos {
   readonly _: unique symbol;
@@ -19,6 +19,10 @@ const retryPolicy = Schedule.exponential("10 millis").pipe(
   Schedule.whileOutput(Duration.lessThan("3 seconds"))
 );
 
+const withCounter = Metric.counter("hello_world_counter").pipe(
+  Metric.trackAll(1)
+);
+
 export const makeTodos = Effect.gen(function* (_) {
   return {
     getTodos: Effect.sync(() => [
@@ -30,7 +34,8 @@ export const makeTodos = Effect.gen(function* (_) {
           : Effect.fail(new GetTodoError({ message: "failure to get todos" }))
       ),
       Effect.withSpan("getTodosRandom"),
-      Effect.retry(retryPolicy)
+      withCounter
+      //Effect.retry(retryPolicy)
     ),
   };
 });

@@ -14,6 +14,9 @@ export default defineConfig({
   build: {
     outDir: "build",
     copyPublicDir: false,
+    rollupOptions: {
+      external: [/@opentelemetry.*/, /esbuild/],
+    },
   },
   publicDir: "./public",
 });
