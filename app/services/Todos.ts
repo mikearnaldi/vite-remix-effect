@@ -1,16 +1,18 @@
 import { Schema } from "@effect/schema";
 import { Context, Duration, Effect, Layer, Metric, Schedule } from "effect";
-
-export interface Todos {
-  readonly _: unique symbol;
-}
+import { Sql, SqlLive } from "./Sql";
 
 export class Todo extends Schema.Class<Todo>()({
+  id: Schema.number,
   title: Schema.string,
   createdAt: Schema.dateFromString(Schema.string),
 }) {}
 
+export const TodoArray = Schema.array(Todo);
+export const parseTodoArray = Schema.parse(TodoArray);
+
 export class GetTodoError extends Schema.Class<GetTodoError>()({
+  _tag: Schema.literal("GetTodoError"),
   message: Schema.string,
 }) {}
 
@@ -19,28 +21,43 @@ const retryPolicy = Schedule.exponential("10 millis").pipe(
   Schedule.whileOutput(Duration.lessThan("3 seconds"))
 );
 
+const fetchTodosErrorCount = Metric.counter("fetchTodosErrorCount");
+
 export const makeTodos = Effect.gen(function* (_) {
+  const sql = yield* _(Sql);
+
+  const getTodos = Effect.gen(function* (_) {
+    const rows = yield* _(Effect.orDie(sql`SELECT * from todos;`));
+    const todos = yield* _(Effect.orDie(parseTodoArray(rows)));
+    if (Math.random() > 0.5) {
+      return yield* _(
+        Effect.fail(
+          new GetTodoError({
+            _tag: "GetTodoError",
+            message: "failure to get todos",
+          })
+        )
+      );
+    }
+    return todos;
+  }).pipe(
+    Metric.trackErrorWith(fetchTodosErrorCount, () => 1),
+    Effect.withSpan("fetchTodos"),
+    Effect.retry(retryPolicy)
+  );
+
   return {
-    getTodos: Effect.sync(() => [
-      new Todo({ title: "Try Remix with Vite", createdAt: new Date() }),
-      new Todo({ title: "Integrate Effect", createdAt: new Date() }),
-      new Todo({ title: "Integrate OpenTelemetry", createdAt: new Date() }),
-    ]).pipe(
-      Effect.tap(() =>
-        Math.random() > 0.5
-          ? Effect.unit
-          : Effect.fail(new GetTodoError({ message: "failure to get todos" }))
-      ),
-      Metric.trackErrorWith(Metric.counter("fetchTodosErrorCount"), () => 1),
-      Effect.withSpan("fetchTodos"),
-      Effect.retry(retryPolicy)
-    ),
+    getTodos,
   };
 });
+
+export interface Todos {
+  readonly _: unique symbol;
+}
 
 export const Todos = Context.Tag<
   Todos,
   Effect.Effect.Success<typeof makeTodos>
->("@context/Hello");
+>("@context/Todos");
 
-export const TodosLive = Layer.effect(Todos, makeTodos);
+export const TodosLive = Layer.provide(SqlLive, Layer.effect(Todos, makeTodos));

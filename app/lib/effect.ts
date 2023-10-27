@@ -1,10 +1,11 @@
-import { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction } from "@remix-run/node";
 import { Layer, Effect, Scope, Exit, Runtime, Context, Either } from "effect";
 import { TodosLive } from "~/services/Todos";
 import * as Schema from "@effect/schema/Schema";
 import { TracingLive } from "~/services/Tracing";
+import { SqlLive } from "~/services/Sql";
 
-const layer = Layer.provide(TracingLive, Layer.mergeAll(TodosLive));
+const layer = Layer.provide(TracingLive, Layer.mergeAll(TodosLive, SqlLive));
 const runtimeSymbol = Symbol.for("@globals/Runtime");
 
 const makeRuntime = Effect.runPromise(
