@@ -46,15 +46,7 @@ export const remixRuntime = <E, A>(layer: Layer.Layer<never, E, A>) => {
   process.on("SIGINT", onExit);
   process.on("SIGTERM", onExit);
 
-  const effectLoader: {
-    <E, A>(
-      body: Effect.Effect<
-        Layer.Layer.Success<typeof layer> | LoaderFunctionArg,
-        E,
-        A
-      >
-    ): (...args: Parameters<LoaderFunction>) => Promise<A>;
-  } =
+  const effectLoader =
     <E, A>(
       body: Effect.Effect<
         Layer.Layer.Success<typeof layer> | LoaderFunctionArg,
