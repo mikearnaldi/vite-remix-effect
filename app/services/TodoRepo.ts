@@ -41,6 +41,7 @@ const retryPolicy = Schedule.exponential("10 millis").pipe(
 
 const getAllTodosErrorCount = Metric.counter("getAllTodosErrorCount");
 const addTodoErrorCount = Metric.counter("addTodoErrorCount");
+const deleteTodoErrorCount = Metric.counter("deleteTodoErrorCount");
 
 //
 // Service Definition
@@ -81,6 +82,18 @@ export const makeTodoRepo = Effect.gen(function* (_) {
       Effect.withSpan("addTodo")
     );
 
+  const deleteTodo = (id: number) =>
+    Effect.gen(function* (_) {
+      yield* _(
+        Effect.orDie(sql`DELETE FROM todos WHERE id = ${id}`),
+        Effect.withSpan("deleteFromDb")
+      );
+    }).pipe(
+      sql.withTransaction,
+      Metric.trackErrorWith(deleteTodoErrorCount, () => 1),
+      Effect.withSpan("deleteTodo")
+    );
+
   const getAllTodos = Effect.gen(function* (_) {
     const rows = yield* _(
       Effect.orDie(sql`SELECT * from todos;`),
@@ -108,6 +121,7 @@ export const makeTodoRepo = Effect.gen(function* (_) {
   return {
     getAllTodos,
     addTodo,
+    deleteTodo,
   };
 });
 

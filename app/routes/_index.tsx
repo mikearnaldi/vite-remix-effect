@@ -6,25 +6,36 @@ import { useEffect, useRef } from "react";
 import { useNavigation } from "react-router-dom";
 import { getFormData } from "~/services/Remix";
 import { effectAction, effectLoader } from "~/services/Runtime";
-import { Todo, TodoArray, TodoRepo } from "~/services/TodoRepo";
+import type { Todo } from "~/services/TodoRepo";
+import { TodoArray, TodoRepo } from "~/services/TodoRepo";
+
+const ActionInput = Schema.union(
+  Schema.struct({
+    _tag: Schema.literal("AddTodo"),
+    title: Schema.string,
+  }),
+  Schema.struct({
+    _tag: Schema.literal("DeleteTodo"),
+    id: Schema.numberFromString(Schema.string),
+  })
+);
 
 export const action = effectAction(
   Effect.gen(function* (_) {
-    const { addTodo } = yield* _(TodoRepo);
-    const { title } = yield* _(
-      getFormData(
-        Schema.struct({
-          title: Schema.string,
-        })
-      )
-    );
-    const todo = yield* _(addTodo(title));
-    return yield* _(
-      todo,
-      Schema.encode(Todo),
-      Effect.withSpan("encodeResponse")
-    );
-  }).pipe(Effect.withSpan("addTodoAction"))
+    const { addTodo, deleteTodo } = yield* _(TodoRepo);
+    const input = yield* _(getFormData(ActionInput));
+    switch (input._tag) {
+      case "AddTodo": {
+        yield* _(addTodo(input.title));
+        break;
+      }
+      case "DeleteTodo": {
+        yield* _(deleteTodo(input.id));
+        break;
+      }
+    }
+    return input._tag;
+  }).pipe(Effect.withSpan("indexAction"))
 );
 
 export const loader = effectLoader(
@@ -49,15 +60,54 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+function TodoRow({ todo }: { todo: Schema.Schema.From<typeof Todo> }) {
+  const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+  const deleteTodoForm = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (navigation.state === "idle" && actionData) {
+      switch (actionData) {
+        case "DeleteTodo": {
+          deleteTodoForm.current?.reset();
+          break;
+        }
+      }
+    }
+  }, [navigation.state, actionData]);
+
+  return (
+    <li>
+      <div style={{ display: "flex", gap: "0.5em" }}>
+        <div>
+          {todo.title} ({todo.createdAt})
+        </div>
+        <div>
+          <Form method="post" ref={deleteTodoForm}>
+            <input type="hidden" name="_tag" value="DeleteTodo" />
+            <input type="hidden" name="id" value={todo.id} />
+            <button type="submit">Done</button>
+          </Form>
+        </div>
+      </div>
+    </li>
+  );
+}
+
 export default function Index() {
   const todos = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
-  const formRef = useRef<HTMLFormElement>(null);
+  const addTodoForm = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (navigation.state === "idle" && actionData) {
-      formRef.current?.reset();
+      switch (actionData) {
+        case "AddTodo": {
+          addTodoForm.current?.reset();
+          break;
+        }
+      }
     }
   }, [navigation.state, actionData]);
 
@@ -65,14 +115,13 @@ export default function Index() {
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
       <h1>Todos ok</h1>
       <ul>
-        {todos.map((todo, i) => (
-          <li key={i}>
-            {todo.title} ({todo.createdAt})
-          </li>
+        {todos.map((todo) => (
+          <TodoRow todo={todo} key={todo.id} />
         ))}
       </ul>
       <h2>Add New Todo</h2>
-      <Form method="post" ref={formRef}>
+      <Form method="post" ref={addTodoForm}>
+        <input type="hidden" name="_tag" value="AddTodo" />
         <input type="text" name="title" />
         <button type="submit">Create Todo</button>
       </Form>
