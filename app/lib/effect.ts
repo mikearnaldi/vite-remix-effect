@@ -43,8 +43,6 @@ export const runPromise = <E, A>(
   effect: Effect.Effect<Layer.Layer.Success<typeof layer>, E, A>
 ) => makeRuntime.then(({ runtime }) => Runtime.runPromise(runtime)(effect));
 
-type NoInfer<T> = [T][T extends any ? 0 : never];
-
 export interface RequestContext {
   readonly _: unique symbol;
 }
@@ -52,17 +50,6 @@ export const LoaderContext = Context.Tag<
   RequestContext,
   Parameters<LoaderFunction>[0]
 >("@services/LoaderContext");
-
-export const orThrow = <E, A>(
-  value:
-    | { readonly _tag: "Left"; readonly left: E }
-    | { readonly _tag: "Right"; readonly right: A }
-): A => {
-  if (value._tag === "Right") {
-    return value.right;
-  }
-  throw value.left;
-};
 
 export const effectLoader: {
   <I, A, EI, EA>(opts: {
@@ -72,8 +59,8 @@ export const effectLoader: {
   }): (
     body: Effect.Effect<
       Layer.Layer.Success<typeof layer> | RequestContext,
-      NoInfer<EA>,
-      NoInfer<A>
+      EA,
+      A
     >
   ) => (
     ...args: Parameters<LoaderFunction>
@@ -84,7 +71,7 @@ export const effectLoader: {
     body: Effect.Effect<
       Layer.Layer.Success<typeof layer> | RequestContext,
       never,
-      NoInfer<A>
+      A
     >
   ) => (...args: Parameters<LoaderFunction>) => Promise<I>;
 } =
@@ -97,7 +84,7 @@ export const effectLoader: {
     body: Effect.Effect<
       Layer.Layer.Success<typeof layer> | RequestContext,
       any,
-      NoInfer<A>
+      A
     >
   ) =>
   (...args: Parameters<LoaderFunction>): Promise<I> => {
