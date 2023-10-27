@@ -27,8 +27,14 @@ export const makeTodos = Effect.gen(function* (_) {
   const sql = yield* _(Sql);
 
   const getTodos = Effect.gen(function* (_) {
-    const rows = yield* _(Effect.orDie(sql`SELECT * from todos;`));
-    const todos = yield* _(Effect.orDie(parseTodoArray(rows)));
+    const rows = yield* _(
+      Effect.orDie(sql`SELECT * from todos;`),
+      Effect.withSpan("getFromDb")
+    );
+    const todos = yield* _(
+      Effect.orDie(parseTodoArray(rows)),
+      Effect.withSpan("parseTodos")
+    );
     if (Math.random() > 0.5) {
       return yield* _(
         Effect.fail(

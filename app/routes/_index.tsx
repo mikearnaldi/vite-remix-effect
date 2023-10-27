@@ -2,8 +2,8 @@ import { Schema } from "@effect/schema";
 import type { MetaFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { Effect } from "effect";
-import { effectLoader } from "~/lib/effect";
-import { GetTodoError, Todo, Todos } from "~/services/Todos";
+import { effectLoader } from "~/services/Runtime";
+import { GetTodoError, TodoArray, Todos } from "~/services/Todos";
 
 export const meta: MetaFunction = () => {
   return [
@@ -12,15 +12,16 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export const loader = effectLoader({
-  name: "indexLoader",
-  success: Schema.array(Todo),
-  error: GetTodoError,
-})(
+export const loader = effectLoader(
   Effect.gen(function* (_) {
     const { getTodos } = yield* _(Todos);
-    return yield* _(getTodos);
-  })
+    const result = yield* _(Effect.either(getTodos));
+    return yield* _(
+      result,
+      Schema.encode(Schema.either(GetTodoError, TodoArray)),
+      Effect.withSpan("encodeResponse")
+    );
+  }).pipe(Effect.withSpan("indexLoader"))
 );
 
 export default function Index() {
