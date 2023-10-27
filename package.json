@@ -43,6 +43,7 @@
     "@types/react-dom": "^18.2.7",
     "babel-plugin-annotate-pure-calls": "^0.4.0",
     "eslint": "^8.38.0",
+    "terser": "^5.22.0",
     "typescript": "^5.1.6",
     "vite": "^4.5.0",
     "vite-plugin-babel": "^1.1.3",

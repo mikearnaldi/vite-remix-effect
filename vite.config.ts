@@ -14,9 +14,10 @@ export default defineConfig({
   build: {
     outDir: "build",
     copyPublicDir: false,
+    minify: "terser",
   },
-  optimizeDeps: {
-    include: ["@opentelemetry/otlp-proto-exporter-base"],
+  ssr: {
+    noExternal: [/@effect\/.*/, /effect/, /@sqlfx\/.*/],
   },
   publicDir: "./public",
 });

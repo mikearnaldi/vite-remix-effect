@@ -78,7 +78,7 @@ devDependencies:
     version: 7.23.2(@babel/core@7.23.2)
   '@remix-run/dev':
     specifier: nightly
-    version: 0.0.0-nightly-1f29147-20231026(@remix-run/serve@0.0.0-nightly-1f29147-20231026)(typescript@5.1.6)(vite@4.5.0)
+    version: 0.0.0-nightly-1f29147-20231026(@remix-run/serve@0.0.0-nightly-1f29147-20231026)(terser@5.22.0)(typescript@5.1.6)(vite@4.5.0)
   '@remix-run/eslint-config':
     specifier: nightly
     version: 0.0.0-nightly-1f29147-20231026(eslint@8.38.0)(react@18.2.0)(typescript@5.1.6)
@@ -97,12 +97,15 @@ devDependencies:
   eslint:
     specifier: ^8.38.0
     version: 8.38.0
+  terser:
+    specifier: ^5.22.0
+    version: 5.22.0
   typescript:
     specifier: ^5.1.6
     version: 5.1.6
   vite:
     specifier: ^4.5.0
-    version: 4.5.0
+    version: 4.5.0(terser@5.22.0)
   vite-plugin-babel:
     specifier: ^1.1.3
     version: 1.1.3(@babel/core@7.23.2)(vite@4.5.0)
@@ -1067,6 +1070,13 @@ packages:
     engines: {node: '>=6.0.0'}
     dev: true
 
+  /@jridgewell/source-map@0.3.5:
+    resolution: {integrity: sha512-UTYAUj/wviwdsMfzoSJspJxbkH5o1snzwX0//0ENX1u/55kkZZkcTZP6u9bwKGkv+dkk9at4m1Cpt0uY80kcpQ==}
+    dependencies:
+      '@jridgewell/gen-mapping': 0.3.3
+      '@jridgewell/trace-mapping': 0.3.20
+    dev: true
+
   /@jridgewell/sourcemap-codec@1.4.15:
     resolution: {integrity: sha512-eF2rxCRulEKXHTRiDrDy6erMYWqNw4LPdQ8UQA4huuxaQsVeRPFl2oM8oDGxMFhJUWZf9McpLtJasDDZb/Bpeg==}
     dev: true
@@ -1555,7 +1565,7 @@ packages:
     engines: {node: '>=18.0.0'}
     dev: false
 
-  /@remix-run/dev@0.0.0-nightly-1f29147-20231026(@remix-run/serve@0.0.0-nightly-1f29147-20231026)(typescript@5.1.6)(vite@4.5.0):
+  /@remix-run/dev@0.0.0-nightly-1f29147-20231026(@remix-run/serve@0.0.0-nightly-1f29147-20231026)(terser@5.22.0)(typescript@5.1.6)(vite@4.5.0):
     resolution: {integrity: sha512-P1acbwGiCfpzdR2eO7Os5vCVR1UUfUKpwWrjexcT4Zud3eypW2scRdpowYRdiA03FRatV1cxE++uHp5pKpr02Q==}
     engines: {node: '>=18.0.0'}
     hasBin: true
@@ -1586,7 +1596,7 @@ packages:
       '@remix-run/serve': 0.0.0-nightly-1f29147-20231026(typescript@5.1.6)
       '@remix-run/server-runtime': 0.0.0-nightly-1f29147-20231026(typescript@5.1.6)
       '@types/mdx': 2.0.9
-      '@vanilla-extract/integration': 6.2.2
+      '@vanilla-extract/integration': 6.2.2(terser@5.22.0)
       arg: 5.0.2
       cacache: 17.1.4
       chalk: 4.1.2
@@ -1628,7 +1638,7 @@ packages:
       tsconfig-paths: 4.2.0
       typescript: 5.1.6
       undici: 5.26.5
-      vite: 4.5.0
+      vite: 4.5.0(terser@5.22.0)
       ws: 7.5.9
     transitivePeerDependencies:
       - '@types/node'
@@ -2109,7 +2119,7 @@ packages:
       outdent: 0.8.0
     dev: true
 
-  /@vanilla-extract/integration@6.2.2:
+  /@vanilla-extract/integration@6.2.2(terser@5.22.0):
     resolution: {integrity: sha512-gV3qPFjFap1+IrPeuFy+tEZOq7l7ifJf1ik/kluDWhPr1ffsFG9puq1/jjJ4rod1BIC79Q5ZWPNvBInHyxfCew==}
     dependencies:
       '@babel/core': 7.23.2
@@ -2123,8 +2133,8 @@ packages:
       lodash: 4.17.21
       mlly: 1.4.2
       outdent: 0.8.0
-      vite: 4.5.0
-      vite-node: 0.28.5
+      vite: 4.5.0(terser@5.22.0)
+      vite-node: 0.28.5(terser@5.22.0)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -2668,6 +2678,10 @@ packages:
 
   /comma-separated-tokens@2.0.3:
     resolution: {integrity: sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==}
+    dev: true
+
+  /commander@2.20.3:
+    resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
     dev: true
 
   /compressible@2.0.18:
@@ -6570,6 +6584,17 @@ packages:
       yallist: 4.0.0
     dev: true
 
+  /terser@5.22.0:
+    resolution: {integrity: sha512-hHZVLgRA2z4NWcN6aS5rQDc+7Dcy58HOf2zbYwmFcQ+ua3h6eEFf5lIDKTzbWwlazPyOZsFQO8V80/IjVNExEw==}
+    engines: {node: '>=10'}
+    hasBin: true
+    dependencies:
+      '@jridgewell/source-map': 0.3.5
+      acorn: 8.10.0
+      commander: 2.20.3
+      source-map-support: 0.5.21
+    dev: true
+
   /text-table@0.2.0:
     resolution: {integrity: sha512-N+8UisAXDGk8PFXP4HAzVR9nbfmVJ3zYLAWiTIoqC5v5isinhr+r5uaO8+7r3BMfuNIufIsA7RdpVgacC2cSpw==}
     dev: true
@@ -6926,7 +6951,7 @@ packages:
       vfile-message: 3.1.4
     dev: true
 
-  /vite-node@0.28.5:
+  /vite-node@0.28.5(terser@5.22.0):
     resolution: {integrity: sha512-LmXb9saMGlrMZbXTvOveJKwMTBTNUH66c8rJnQ0ZPNX+myPEol64+szRzXtV5ORb0Hb/91yq+/D3oERoyAt6LA==}
     engines: {node: '>=v14.16.0'}
     hasBin: true
@@ -6938,7 +6963,7 @@ packages:
       picocolors: 1.0.0
       source-map: 0.6.1
       source-map-support: 0.5.21
-      vite: 4.5.0
+      vite: 4.5.0(terser@5.22.0)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -6957,7 +6982,7 @@ packages:
       vite: ^2.7.0 || ^3.0.0 || ^4.0.0
     dependencies:
       '@babel/core': 7.23.2
-      vite: 4.5.0
+      vite: 4.5.0(terser@5.22.0)
     dev: true
 
   /vite-tsconfig-paths@4.2.1(typescript@5.1.6)(vite@4.5.0):
@@ -6971,13 +6996,13 @@ packages:
       debug: 4.3.4
       globrex: 0.1.2
       tsconfck: 2.1.2(typescript@5.1.6)
-      vite: 4.5.0
+      vite: 4.5.0(terser@5.22.0)
     transitivePeerDependencies:
       - supports-color
       - typescript
     dev: true
 
-  /vite@4.5.0:
+  /vite@4.5.0(terser@5.22.0):
     resolution: {integrity: sha512-ulr8rNLA6rkyFAlVWw2q5YJ91v098AFQ2R0PRFwPzREXOUJQPtFUG0t+/ZikhaOCDqFoDhN6/v8Sq0o4araFAw==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
@@ -7008,6 +7033,7 @@ packages:
       esbuild: 0.18.20
       postcss: 8.4.31
       rollup: 3.29.4
+      terser: 5.22.0
     optionalDependencies:
       fsevents: 2.3.3
     dev: true
