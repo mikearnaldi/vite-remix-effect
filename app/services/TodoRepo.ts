@@ -64,13 +64,14 @@ export const makeTodoRepo = Effect.gen(function* (_) {
 
   const addTodo = (title: string) =>
     Effect.gen(function* (_) {
-      const sql = yield* _(Sql);
       const rows = yield* _(
-        sql`INSERT INTO todos ${sql.insert([{ title }])} RETURNING *`,
+        Effect.orDie(
+          sql`INSERT INTO todos ${sql.insert([{ title }])} RETURNING *`
+        ),
         Effect.withSpan("addTodoToDb")
       );
       const [todo] = yield* _(
-        Schema.parse(Schema.tuple(Todo))(rows),
+        Effect.orDie(Schema.parse(Schema.tuple(Todo))(rows)),
         Effect.withSpan("parseResponse")
       );
       return todo;
