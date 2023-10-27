@@ -5,17 +5,18 @@ import * as Schema from "@effect/schema/Schema";
 import { TracingLive } from "~/services/Tracing";
 
 const layer = Layer.provide(TracingLive, Layer.mergeAll(TodosLive));
+const runtimeSymbol = Symbol.for("@globals/Runtime");
 
 const makeRuntime = Effect.runPromise(
   Effect.gen(function* ($) {
     const scope = yield* $(Scope.make());
     const runtime = yield* $(Layer.toRuntime(layer), Scope.extend(scope));
     const close = Scope.close(scope, Exit.unit);
-    if ("runtimeClose" in globalThis) {
-      yield* $((globalThis as any)["runtimeClose"] as typeof close);
+    if (runtimeSymbol in globalThis) {
+      yield* $((globalThis as any)[runtimeSymbol] as typeof close);
     }
     // @ts-expect-error
-    globalThis["runtimeClose"] = close;
+    globalThis[runtimeSymbol] = close;
     return {
       runtime,
       close: close,

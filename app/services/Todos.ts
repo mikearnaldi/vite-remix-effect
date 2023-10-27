@@ -22,7 +22,9 @@ const retryPolicy = Schedule.exponential("10 millis").pipe(
 export const makeTodos = Effect.gen(function* (_) {
   return {
     getTodos: Effect.sync(() => [
-      new Todo({ title: "ok", createdAt: new Date() }),
+      new Todo({ title: "Try Remix with Vite", createdAt: new Date() }),
+      new Todo({ title: "Integrate Effect", createdAt: new Date() }),
+      new Todo({ title: "Integrate OpenTelemetry", createdAt: new Date() }),
     ]).pipe(
       Effect.tap(() =>
         Math.random() > 0.5
