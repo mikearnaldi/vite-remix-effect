@@ -16,8 +16,5 @@ export default defineConfig({
     copyPublicDir: false,
     minify: "terser",
   },
-  ssr: {
-    noExternal: [/@effect\/.*/, /effect/, /@sqlfx\/.*/],
-  },
   publicDir: "./public",
 });

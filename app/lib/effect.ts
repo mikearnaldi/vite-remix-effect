@@ -1,7 +1,7 @@
-import type { LoaderFunction } from "@remix-run/node";
+import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { Effect, Exit, Fiber, Layer, Runtime, Scope } from "effect";
 import { makeFiberFailure } from "effect/Runtime";
-import { LoaderFunctionArg } from "~/services/LoaderFunctionArg";
+import { ActionContext, LoaderContext } from "~/services/Remix";
 
 const runtimeSymbol = Symbol.for("@globals/Runtime");
 
@@ -46,32 +46,48 @@ export const remixRuntime = <E, A>(layer: Layer.Layer<never, E, A>) => {
   process.on("SIGINT", onExit);
   process.on("SIGTERM", onExit);
 
+  const run = async <E, A>(
+    body: Effect.Effect<Layer.Layer.Success<typeof layer>, E, A>
+  ) => {
+    const { runtime } = await makeRuntime;
+    return await new Promise<A>((res, rej) => {
+      const fiber = Runtime.runFork(runtime)(body);
+      fibers.add(fiber);
+      fiber.addObserver((exit) => {
+        fibers.delete(fiber);
+        if (Exit.isSuccess(exit)) {
+          res(exit.value);
+        } else {
+          rej(makeFiberFailure(exit.cause));
+        }
+      });
+    });
+  };
+
   const effectLoader =
     <E, A>(
       body: Effect.Effect<
-        Layer.Layer.Success<typeof layer> | LoaderFunctionArg,
+        Layer.Layer.Success<typeof layer> | LoaderContext,
         E,
         A
       >
     ) =>
-    async (...args: Parameters<LoaderFunction>): Promise<A> => {
-      const { runtime } = await makeRuntime;
-      let effect = body.pipe(Effect.provideService(LoaderFunctionArg, args[0]));
-      return await new Promise((res, rej) => {
-        const fiber = Runtime.runFork(runtime)(effect);
-        fibers.add(fiber);
-        fiber.addObserver((exit) => {
-          fibers.delete(fiber);
-          if (Exit.isSuccess(exit)) {
-            res(exit.value);
-          } else {
-            rej(makeFiberFailure(exit.cause));
-          }
-        });
-      });
-    };
+    (...args: Parameters<LoaderFunction>): Promise<A> =>
+      run(Effect.provideService(body, LoaderContext, args[0]));
+
+  const effectAction =
+    <E, A>(
+      body: Effect.Effect<
+        Layer.Layer.Success<typeof layer> | ActionContext,
+        E,
+        A
+      >
+    ) =>
+    (...args: Parameters<ActionFunction>): Promise<A> =>
+      run(Effect.provideService(body, ActionContext, args[0]));
 
   return {
     effectLoader,
+    effectAction,
   };
 };

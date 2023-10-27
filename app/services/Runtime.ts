@@ -1,9 +1,9 @@
 import { Layer } from "effect";
 import { SqlLive } from "./Sql";
-import { TodosLive } from "./Todos";
+import { TodoRepoLive } from "./TodoRepo";
 import { TracingLive } from "./Tracing";
 import { remixRuntime } from "~/lib/effect";
 
-export const { effectLoader } = remixRuntime(
-  Layer.provide(TracingLive, Layer.mergeAll(TodosLive, SqlLive))
+export const { effectLoader, effectAction } = remixRuntime(
+  Layer.provide(TracingLive, Layer.mergeAll(TodoRepoLive, SqlLive))
 );
