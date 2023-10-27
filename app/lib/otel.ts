@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/consistent-type-imports */
 import Module from "node:module";
 
 const require = Module.createRequire(import.meta.url);
