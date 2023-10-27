@@ -15,4 +15,4 @@ export const SqlLive = Layer.provideMerge(
   Migrator.makeLayer({
     loader: Migrator.fromGlob(migrations),
   })
-);
+).pipe(Layer.orDie);
