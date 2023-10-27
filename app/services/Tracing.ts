@@ -1,5 +1,5 @@
 import * as NodeSdk from "@effect/opentelemetry/NodeSdk";
-import { Config, ConfigSecret, Effect, Layer } from "effect";
+import { Config, ConfigSecret, Duration, Effect, Layer } from "effect";
 import {
   BatchSpanProcessor,
   OTLPMetricExporter,
@@ -35,11 +35,11 @@ export const TracingLive = Layer.unwrapEffect(
     return NodeSdk.layer(() => ({
       resource: { serviceName },
       spanProcessor: new BatchSpanProcessor(traceExporter, {
-        scheduledDelayMillis: 1000,
+        scheduledDelayMillis: Duration.toMillis("1 seconds"),
       }),
       metricReader: new PeriodicExportingMetricReader({
         exporter: metricExporter,
-        exportIntervalMillis: 1000,
+        exportIntervalMillis: Duration.toMillis("5 seconds"),
       }),
     }));
   })
