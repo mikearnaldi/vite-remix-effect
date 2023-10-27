@@ -1,3 +1,4 @@
+import { Schema } from "@effect/schema";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { Context, Effect } from "effect";
 
@@ -24,3 +25,8 @@ export const getFormDataEntries = ActionContext.pipe(
   Effect.map((formData) => Object.fromEntries(formData)),
   Effect.withSpan("getFormDataEntries")
 );
+
+export const getFormData = <I, A>(schema: Schema.Schema<I, A>) =>
+  Effect.flatMap(getFormDataEntries, (entries) =>
+    Schema.parse(schema)(entries).pipe(Effect.withSpan("parseFormData"))
+  ).pipe(Effect.withSpan("getFormData"));

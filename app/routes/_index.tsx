@@ -1,24 +1,24 @@
 import { Schema } from "@effect/schema";
 import type { MetaFunction } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
-import { Effect, flow } from "effect";
+import { Effect } from "effect";
 import { useEffect, useRef } from "react";
 import { useNavigation } from "react-router-dom";
-import { getFormDataEntries } from "~/services/Remix";
+import { getFormData } from "~/services/Remix";
 import { effectAction, effectLoader } from "~/services/Runtime";
 import { Todo, TodoArray, TodoRepo } from "~/services/TodoRepo";
 
-const parseFormData = flow(
-  Schema.parse(Schema.struct({ title: Schema.string })),
-  Effect.withSpan("parseFormData")
-);
-
 export const action = effectAction(
   Effect.gen(function* (_) {
-    const todos = yield* _(TodoRepo);
-    const formData = yield* _(getFormDataEntries);
-    const { title } = yield* _(parseFormData(formData));
-    const todo = yield* _(todos.addTodo(title));
+    const { addTodo } = yield* _(TodoRepo);
+    const { title } = yield* _(
+      getFormData(
+        Schema.struct({
+          title: Schema.string,
+        })
+      )
+    );
+    const todo = yield* _(addTodo(title));
     return yield* _(
       todo,
       Schema.encode(Todo),
@@ -29,8 +29,8 @@ export const action = effectAction(
 
 export const loader = effectLoader(
   Effect.gen(function* (_) {
-    const todos = yield* _(TodoRepo);
-    const result = yield* _(todos.getAllTodos);
+    const { getAllTodos } = yield* _(TodoRepo);
+    const result = yield* _(getAllTodos);
     return yield* _(
       result,
       Schema.encode(TodoArray),
