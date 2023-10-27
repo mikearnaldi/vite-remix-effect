@@ -55,14 +55,11 @@ export default function Index() {
   const navigation = useNavigation();
   const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(
-    function resetFormOnSuccess() {
-      if (navigation.state === "idle" && actionData) {
-        formRef.current?.reset();
-      }
-    },
-    [navigation.state, actionData]
-  );
+  useEffect(() => {
+    if (navigation.state === "idle" && actionData) {
+      formRef.current?.reset();
+    }
+  }, [navigation.state, actionData]);
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
