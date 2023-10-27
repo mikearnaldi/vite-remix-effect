@@ -5,13 +5,6 @@ import { Effect } from "effect";
 import { effectLoader } from "~/services/Runtime";
 import { GetTodoError, TodoArray, Todos } from "~/services/Todos";
 
-export const meta: MetaFunction = () => {
-  return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
-  ];
-};
-
 export const loader = effectLoader(
   Effect.gen(function* (_) {
     const { getTodos } = yield* _(Todos);
@@ -23,6 +16,16 @@ export const loader = effectLoader(
     );
   }).pipe(Effect.withSpan("indexLoader"))
 );
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Remixing Effect" },
+    {
+      name: "description",
+      content: "Integrate Effect & Remix for the greater good!",
+    },
+  ];
+};
 
 export default function Index() {
   const todos = useLoaderData<typeof loader>();

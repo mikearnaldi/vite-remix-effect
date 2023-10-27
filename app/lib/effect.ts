@@ -1,34 +1,31 @@
 import type { LoaderFunction } from "@remix-run/node";
-import type { Fiber } from "effect";
-import { Context, Effect, Exit, Layer, Runtime, Scope } from "effect";
+import { Effect, Exit, Fiber, Layer, Runtime, Scope } from "effect";
 import { makeFiberFailure } from "effect/Runtime";
+import { LoaderFunctionArg } from "~/services/LoaderFunctionArg";
 
 const runtimeSymbol = Symbol.for("@globals/Runtime");
 
-export interface RequestContext {
-  readonly _: unique symbol;
-}
-
-export const LoaderContext = Context.Tag<
-  RequestContext,
-  Parameters<LoaderFunction>[0]
->("@services/LoaderContext");
-
 export const remixRuntime = <E, A>(layer: Layer.Layer<never, E, A>) => {
   const fibers = new Set<Fiber.RuntimeFiber<any, any>>();
+
   const makeRuntime = Effect.runPromise(
     Effect.gen(function* ($) {
       const scope = yield* $(Scope.make());
       const runtime = yield* $(Layer.toRuntime(layer), Scope.extend(scope));
       const close = Scope.close(scope, Exit.unit);
+      const closeLoop: Effect.Effect<never, never, void> = Effect.flatMap(
+        Fiber.interruptAll(fibers),
+        () => (fibers.size > 0 ? closeLoop : Effect.unit)
+      );
+      const finalClose = Effect.flatMap(closeLoop, () => close);
       if (runtimeSymbol in globalThis) {
-        yield* $((globalThis as any)[runtimeSymbol] as typeof close);
+        yield* $((globalThis as any)[runtimeSymbol] as typeof finalClose);
       }
       // @ts-expect-error
-      globalThis[runtimeSymbol] = close;
+      globalThis[runtimeSymbol] = finalClose;
       return {
         runtime,
-        close: close,
+        close: finalClose,
       };
     })
   );
@@ -52,7 +49,7 @@ export const remixRuntime = <E, A>(layer: Layer.Layer<never, E, A>) => {
   const effectLoader: {
     <E, A>(
       body: Effect.Effect<
-        Layer.Layer.Success<typeof layer> | RequestContext,
+        Layer.Layer.Success<typeof layer> | LoaderFunctionArg,
         E,
         A
       >
@@ -60,14 +57,14 @@ export const remixRuntime = <E, A>(layer: Layer.Layer<never, E, A>) => {
   } =
     <E, A>(
       body: Effect.Effect<
-        Layer.Layer.Success<typeof layer> | RequestContext,
+        Layer.Layer.Success<typeof layer> | LoaderFunctionArg,
         E,
         A
       >
     ) =>
     async (...args: Parameters<LoaderFunction>): Promise<A> => {
       const { runtime } = await makeRuntime;
-      let effect = body.pipe(Effect.provideService(LoaderContext, args[0]));
+      let effect = body.pipe(Effect.provideService(LoaderFunctionArg, args[0]));
       return await new Promise((res, rej) => {
         const fiber = Runtime.runFork(runtime)(effect);
         fibers.add(fiber);
