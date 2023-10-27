@@ -21,7 +21,6 @@ export class Todo extends Schema.Class<Todo>()({
 }) {}
 
 export const TodoArray = Schema.array(Todo);
-export const parseTodoArray = Schema.parse(TodoArray);
 
 export class GetAllTodosError extends Data.TaggedError("GetAllTodosError")<{
   message: string;
@@ -41,6 +40,7 @@ const retryPolicy = Schedule.exponential("10 millis").pipe(
 //
 
 const getAllTodosErrorCount = Metric.counter("getAllTodosErrorCount");
+const addTodoErrorCount = Metric.counter("addTodoErrorCount");
 
 //
 // Service Definition
@@ -74,7 +74,10 @@ export const makeTodoRepo = Effect.gen(function* (_) {
         Effect.withSpan("parseResponse")
       );
       return todo;
-    }).pipe(Effect.withSpan("addTodo"));
+    }).pipe(
+      Metric.trackErrorWith(addTodoErrorCount, () => 1),
+      Effect.withSpan("addTodo")
+    );
 
   const getAllTodos = Effect.gen(function* (_) {
     const rows = yield* _(
@@ -82,7 +85,7 @@ export const makeTodoRepo = Effect.gen(function* (_) {
       Effect.withSpan("getFromDb")
     );
     const todos = yield* _(
-      Effect.orDie(parseTodoArray(rows)),
+      Effect.orDie(Schema.parse(TodoArray)(rows)),
       Effect.withSpan("parseTodos")
     );
     if (Math.random() > 0.5) {
