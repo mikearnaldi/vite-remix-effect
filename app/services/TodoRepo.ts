@@ -76,6 +76,7 @@ export const makeTodoRepo = Effect.gen(function* (_) {
       );
       return todo;
     }).pipe(
+      sql.withTransaction,
       Metric.trackErrorWith(addTodoErrorCount, () => 1),
       Effect.withSpan("addTodo")
     );

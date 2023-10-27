@@ -8,28 +8,6 @@ const runtimeSymbol = Symbol.for("@globals/Runtime");
 export const remixRuntime = <E, A>(layer: Layer.Layer<never, E, A>) => {
   const fibers = new Set<Fiber.RuntimeFiber<any, any>>();
 
-  const makeRuntime = Effect.runPromise(
-    Effect.gen(function* ($) {
-      const scope = yield* $(Scope.make());
-      const runtime = yield* $(Layer.toRuntime(layer), Scope.extend(scope));
-      const close = Scope.close(scope, Exit.unit);
-      const closeLoop: Effect.Effect<never, never, void> = Effect.flatMap(
-        Fiber.interruptAll(fibers),
-        () => (fibers.size > 0 ? closeLoop : Effect.unit)
-      );
-      const finalClose = Effect.flatMap(closeLoop, () => close);
-      if (runtimeSymbol in globalThis) {
-        yield* $((globalThis as any)[runtimeSymbol] as typeof finalClose);
-      }
-      // @ts-expect-error
-      globalThis[runtimeSymbol] = finalClose;
-      return {
-        runtime,
-        close: finalClose,
-      };
-    })
-  );
-
   let closed = false;
 
   const onExit = () => {
@@ -43,8 +21,36 @@ export const remixRuntime = <E, A>(layer: Layer.Layer<never, E, A>) => {
     }
   };
 
-  process.on("SIGINT", onExit);
-  process.on("SIGTERM", onExit);
+  const makeRuntime = Effect.runPromise(
+    Effect.gen(function* ($) {
+      const scope = yield* $(Scope.make());
+      const runtime = yield* $(Layer.toRuntime(layer), Scope.extend(scope));
+      const close = Scope.close(scope, Exit.unit);
+      const closeLoop: Effect.Effect<never, never, void> = Effect.flatMap(
+        Fiber.interruptAll(fibers),
+        () => (fibers.size > 0 ? closeLoop : Effect.unit)
+      );
+      const finalClose = Effect.flatMap(
+        Effect.flatMap(closeLoop, () => close),
+        () =>
+          Effect.sync(() => {
+            process.removeListener("SIGTERM", onExit);
+            process.removeListener("SIGINT", onExit);
+          })
+      );
+      if (runtimeSymbol in globalThis) {
+        yield* $((globalThis as any)[runtimeSymbol] as typeof finalClose);
+      }
+      // @ts-expect-error
+      globalThis[runtimeSymbol] = finalClose;
+      process.on("SIGINT", onExit);
+      process.on("SIGTERM", onExit);
+      return {
+        runtime,
+        close: finalClose,
+      };
+    })
+  );
 
   const run = async <E, A>(
     body: Effect.Effect<Layer.Layer.Success<typeof layer>, E, A>

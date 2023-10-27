@@ -2,7 +2,8 @@
   "include": [
     "remix.env.d.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "vite.config.js"
   ],
   "compilerOptions": {
     "lib": [

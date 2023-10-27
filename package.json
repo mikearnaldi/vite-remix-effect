@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build && vite build --ssr",
-    "dev": "vite dev",
+    "dev": "NODE_ENV=development node scripts/dev.js",
     "start": "remix-serve build/index.js",
     "typecheck": "tsc",
     "clean": "rm -rf build && rm -rf public/build && rm -rf node_modules/.vite"
