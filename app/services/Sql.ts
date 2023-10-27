@@ -4,7 +4,7 @@ import { Config, Layer } from "effect";
 
 export const Sql = Sqlfx.tag;
 
-const migrations = import.meta.glob("../../database/migrations/*.ts");
+const migrations = import.meta.glob("../migrations/*.ts");
 
 export const SqlLive = Layer.provideMerge(
   Sqlfx.makeLayer({
