@@ -1,5 +1,5 @@
 import * as NodeSdk from "@effect/opentelemetry/NodeSdk";
-import { Config, ConfigSecret, Duration, Effect, Layer } from "effect";
+import { Config, ConfigSecret, Context, Duration, Effect, Layer } from "effect";
 import {
   BatchSpanProcessor,
   OTLPMetricExporter,
@@ -16,10 +16,7 @@ export const HoneycombConfig = Config.nested("HONEYCOMB")(
 
 export const TracingLive = Layer.unwrapEffect(
   Effect.gen(function* (_) {
-    const { apiKey, serviceName } = yield* _(
-      Effect.config(HoneycombConfig),
-      Effect.orDie
-    );
+    const { apiKey, serviceName } = yield* _(Effect.config(HoneycombConfig));
     const headers = {
       "x-honeycomb-team": ConfigSecret.value(apiKey),
       "x-honeycomb-dataset": serviceName,
@@ -43,4 +40,4 @@ export const TracingLive = Layer.unwrapEffect(
       }),
     }));
   })
-);
+).pipe(Layer.orElse(() => Layer.succeedContext(Context.empty())));
