@@ -3,6 +3,7 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "license": "MIT",
   "scripts": {
     "build": "vite build && vite build --ssr",
     "dev": "NODE_ENV=development node scripts/dev.js",
