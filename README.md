@@ -4,6 +4,12 @@
 - [Effect Docs](https://effect.website/docs)
 - [Vite Docs](https://vitejs.dev/guide/)
 
+## Project Goals
+
+Prototype an integration of Remix + Effect in such a way that the Effect runtime is only ever executed in the backend while keeping the frontend code minimal and fully type safe.
+
+This project aims to demonstrate integration of Effect in one typical setup where the user is not in control of the program entrypoints that are delegated to frameworks, similar scenarios are for example the usage of Next.js or equivalent frameworks.
+
 ## Development
 
 From your terminal:
