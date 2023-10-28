@@ -117,9 +117,14 @@ export default function Index() {
         ))}
       </ul>
       <h2>Add New Todo</h2>
-      <fetcher.Form method="post" ref={addTodoForm} action="?index">
+      <fetcher.Form
+        method="post"
+        ref={addTodoForm}
+        action="?index"
+        style={{ display: "flex", gap: "0.5em" }}
+      >
         <input type="hidden" name="_tag" value="AddTodo" />
-        <input type="text" name="title" />
+        <input type="text" size={50} name="title" />
         <button type="submit">Create Todo</button>
       </fetcher.Form>
     </div>
