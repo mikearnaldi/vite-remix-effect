@@ -30,6 +30,12 @@ pnpm run start
 
 Now you'll need to pick a host to deploy it to.
 
+## Telemetry
+
+If you want to see telemetry data this project is configured to work with [https://www.honeycomb.io/](https://www.honeycomb.io/), create an account if you don't have one (they have a very nice free tier) and write your project name & api key in a file called `.env`, follow the template `.env.template`
+
+Note: if you want to change the backend you use for tracing, for example using your own [grafana tempo](https://grafana.com/oss/tempo/) you'll need to edit `/services/Tracing.ts` accordingly (see [https://github.com/Effect-TS/opentelemetry](https://github.com/Effect-TS/opentelemetry)).
+
 ## Project Setup
 
 This project uses a nightly build of remix in order to use it together with vite. Apart from that it looks like a normal vite project.
