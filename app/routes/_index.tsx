@@ -1,9 +1,8 @@
 import { Schema } from "@effect/schema";
 import type { MetaFunction } from "@remix-run/node";
-import { Form, useActionData, useLoaderData } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import { Effect } from "effect";
 import { useEffect, useRef } from "react";
-import { useNavigation } from "react-router-dom";
 import { getFormData } from "~/services/Remix";
 import { effectAction, effectLoader } from "~/services/Runtime";
 import type { Todo } from "~/services/TodoRepo";
@@ -61,20 +60,19 @@ export const meta: MetaFunction = () => {
 };
 
 function TodoRow({ todo }: { todo: Schema.Schema.From<typeof Todo> }) {
-  const actionData = useActionData<typeof action>();
-  const navigation = useNavigation();
+  const fetcher = useFetcher<typeof action>();
   const deleteTodoForm = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (navigation.state === "idle" && actionData) {
-      switch (actionData) {
+    if (fetcher.state === "idle" && fetcher.data) {
+      switch (fetcher.data) {
         case "DeleteTodo": {
           deleteTodoForm.current?.reset();
           break;
         }
       }
     }
-  }, [navigation.state, actionData]);
+  }, [fetcher.state, fetcher.data]);
 
   return (
     <li>
@@ -83,11 +81,11 @@ function TodoRow({ todo }: { todo: Schema.Schema.From<typeof Todo> }) {
           {todo.title} ({todo.createdAt})
         </div>
         <div>
-          <Form method="post" ref={deleteTodoForm}>
+          <fetcher.Form method="post" ref={deleteTodoForm} action="?index">
             <input type="hidden" name="_tag" value="DeleteTodo" />
             <input type="hidden" name="id" value={todo.id} />
             <button type="submit">Done</button>
-          </Form>
+          </fetcher.Form>
         </div>
       </div>
     </li>
@@ -96,20 +94,19 @@ function TodoRow({ todo }: { todo: Schema.Schema.From<typeof Todo> }) {
 
 export default function Index() {
   const todos = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
-  const navigation = useNavigation();
+  const fetcher = useFetcher<typeof action>();
   const addTodoForm = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (navigation.state === "idle" && actionData) {
-      switch (actionData) {
+    if (fetcher.state === "idle" && fetcher.data) {
+      switch (fetcher.data) {
         case "AddTodo": {
           addTodoForm.current?.reset();
           break;
         }
       }
     }
-  }, [navigation.state, actionData]);
+  }, [fetcher.state, fetcher.data]);
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
@@ -120,11 +117,11 @@ export default function Index() {
         ))}
       </ul>
       <h2>Add New Todo</h2>
-      <Form method="post" ref={addTodoForm}>
+      <fetcher.Form method="post" ref={addTodoForm} action="?index">
         <input type="hidden" name="_tag" value="AddTodo" />
         <input type="text" name="title" />
         <button type="submit">Create Todo</button>
-      </Form>
+      </fetcher.Form>
     </div>
   );
 }
