@@ -34,19 +34,15 @@ export const action = effectAction(
       }
     }
     return input._tag;
-  }).pipe(Effect.withSpan("indexAction"))
+  })
 );
 
 export const loader = effectLoader(
   Effect.gen(function* ($) {
     const { getAllTodos } = yield* $(TodoRepo);
     const result = yield* $(getAllTodos);
-    return yield* $(
-      result,
-      Schema.encode(TodoArray),
-      Effect.withSpan("encodeResponse")
-    );
-  }).pipe(Effect.withSpan("indexLoader"))
+    return yield* $(Schema.encode(TodoArray)(result));
+  })
 );
 
 export const meta: MetaFunction = () => {
