@@ -22,10 +22,11 @@ export const ActionContext = Context.Tag<
 
 export const getFormDataEntries = ActionContext.pipe(
   Effect.flatMap(({ request }) => Effect.promise(() => request.formData())),
-  Effect.map((formData) => Object.fromEntries(formData))
+  Effect.map((formData) => Object.fromEntries(formData)),
+  Effect.withSpan("getFormDataEntries")
 );
 
 export const getFormData = <I, A>(schema: Schema.Schema<I, A>) =>
   Effect.flatMap(getFormDataEntries, (entries) =>
-    Schema.parse(schema)(entries)
-  );
+    Schema.parse(schema)(entries).pipe(Effect.withSpan("parseFormData"))
+  ).pipe(Effect.withSpan("getFormData"));
