@@ -7,6 +7,7 @@ import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useRef } from "react";
 import { z } from "zod";
 import type { Todo } from "~/services/Modes";
+import { SpanStatusCode, tracer } from "~/services/Otel";
 import { addTodo, deleteTodo, getAllTodos } from "~/services/TodoRepo";
 
 const ActionInput = z.union([
@@ -35,7 +36,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return input._tag;
 };
 
-export const loader = () => getAllTodos();
+export const loader = () => {
+  const span = tracer.startSpan("indexLoader");
+  try {
+    return getAllTodos(span);
+  } catch (e) {
+    if (e instanceof Error) {
+      span.setStatus({ code: SpanStatusCode.ERROR, message: e.message });
+    }
+    throw e;
+  } finally {
+    span.end();
+  }
+};
 
 export const meta: MetaFunction = () => {
   return [
