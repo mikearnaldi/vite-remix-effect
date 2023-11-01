@@ -1,5 +1,13 @@
 import { Schema } from "@effect/schema";
-import { Context, Data, Effect, Layer, Metric } from "effect";
+import {
+  Context,
+  Data,
+  Duration,
+  Effect,
+  Layer,
+  Metric,
+  Schedule,
+} from "effect";
 import { Sql, SqlLive } from "./Sql";
 
 //
@@ -17,6 +25,15 @@ export const TodoArray = Schema.array(Todo);
 export class GetAllTodosError extends Data.TaggedError("GetAllTodosError")<{
   message: string;
 }> {}
+
+//
+// Policies
+//
+
+const retryPolicy = Schedule.exponential("10 millis").pipe(
+  Schedule.compose(Schedule.elapsed),
+  Schedule.whileOutput(Duration.lessThan("3 seconds"))
+);
 
 //
 // Metrics
@@ -49,15 +66,18 @@ export const makeTodoRepo = Effect.gen(function* ($) {
   const addTodo = (title: string) =>
     Effect.gen(function* ($) {
       const rows = yield* $(
-        sql`INSERT INTO todos ${sql.insert([{ title }])} RETURNING *`,
+        Effect.orDie(
+          sql`INSERT INTO todos ${sql.insert([{ title }])} RETURNING *`
+        ),
         Effect.withSpan("addTodoToDb")
       );
       const [todo] = yield* $(
-        Schema.parse(Schema.tuple(Todo))(rows),
+        Effect.orDie(Schema.parse(Schema.tuple(Todo))(rows)),
         Effect.withSpan("parseResponse")
       );
       return todo;
     }).pipe(
+      sql.withTransaction,
       Metric.trackErrorWith(addTodoErrorCount, () => 1),
       Effect.withSpan("addTodo")
     );
@@ -65,21 +85,22 @@ export const makeTodoRepo = Effect.gen(function* ($) {
   const deleteTodo = (id: number) =>
     Effect.gen(function* ($) {
       yield* $(
-        sql`DELETE FROM todos WHERE id = ${id}`,
+        Effect.orDie(sql`DELETE FROM todos WHERE id = ${id}`),
         Effect.withSpan("deleteFromDb")
       );
     }).pipe(
+      sql.withTransaction,
       Metric.trackErrorWith(deleteTodoErrorCount, () => 1),
       Effect.withSpan("deleteTodo")
     );
 
   const getAllTodos = Effect.gen(function* ($) {
     const rows = yield* $(
-      sql`SELECT * from todos;`,
+      Effect.orDie(sql`SELECT * from todos;`),
       Effect.withSpan("getFromDb")
     );
     const todos = yield* $(
-      Schema.parse(TodoArray)(rows),
+      Effect.orDie(Schema.parse(TodoArray)(rows)),
       Effect.withSpan("parseTodos")
     );
     if (Math.random() > 0.5) {
@@ -92,7 +113,9 @@ export const makeTodoRepo = Effect.gen(function* ($) {
     return todos;
   }).pipe(
     Metric.trackErrorWith(getAllTodosErrorCount, () => 1),
-    Effect.withSpan("getAllTodos")
+    Effect.withSpan("getAllTodos"),
+    Effect.retry(retryPolicy),
+    Effect.withSpan("getAllTodosWithRetry")
   );
 
   return {
