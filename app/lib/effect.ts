@@ -1,5 +1,6 @@
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { Effect, Exit, Fiber, Layer, Runtime, Scope } from "effect";
+import { pretty } from "effect/Cause";
 import { makeFiberFailure } from "effect/Runtime";
 import { ActionContext, LoaderContext } from "~/services/Remix";
 
@@ -64,7 +65,12 @@ export const remixRuntime = <E, A>(layer: Layer.Layer<never, E, A>) => {
         if (Exit.isSuccess(exit)) {
           res(exit.value);
         } else {
-          rej(makeFiberFailure(exit.cause));
+          const failure = makeFiberFailure(exit.cause);
+          const error = new Error();
+          error.message = failure.message;
+          error.name = failure.name;
+          error.stack = pretty(exit.cause);
+          rej(error);
         }
       });
     });

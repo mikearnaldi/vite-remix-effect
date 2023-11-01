@@ -103,7 +103,7 @@ export const makeTodoRepo = Effect.gen(function* ($) {
       Effect.orDie(Schema.parse(TodoArray)(rows)),
       Effect.withSpan("parseTodos")
     );
-    if (Math.random() > 0.5) {
+    if (Math.random() > -0.5) {
       return yield* $(
         new GetAllTodosError({
           message: "failure to get todos",
