@@ -33,13 +33,15 @@
     "effect": "2.0.0-next.52",
     "isbot": "^3.6.8",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.23.2",
     "@remix-run/dev": "nightly",
     "@remix-run/eslint-config": "nightly",
     "@remix-run/node": "nightly",
+    "@types/better-sqlite3": "^7.6.6",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "babel-plugin-annotate-pure-calls": "^0.4.0",

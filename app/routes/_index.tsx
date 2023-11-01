@@ -1,49 +1,41 @@
-import { Schema } from "@effect/schema";
-import type { MetaFunction } from "@remix-run/node";
+import type {
+  ActionFunctionArgs,
+  MetaFunction,
+  SerializeFrom,
+} from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import { Effect } from "effect";
 import { useEffect, useRef } from "react";
-import { getFormData } from "~/services/Remix";
-import { effectAction, effectLoader } from "~/services/Runtime";
-import type { Todo } from "~/services/TodoRepo";
-import { TodoArray, TodoRepo } from "~/services/TodoRepo";
+import { z } from "zod";
+import type { Todo } from "~/services/Modes";
+import { addTodo, deleteTodo, getAllTodos } from "~/services/TodoRepo";
 
-const ActionInput = Schema.union(
-  Schema.struct({
-    _tag: Schema.literal("AddTodo"),
-    title: Schema.string,
+const ActionInput = z.union([
+  z.object({
+    _tag: z.literal("AddTodo"),
+    title: z.string(),
   }),
-  Schema.struct({
-    _tag: Schema.literal("DeleteTodo"),
-    id: Schema.numberFromString(Schema.string),
-  })
-);
+  z.object({
+    _tag: z.literal("DeleteTodo"),
+    id: z.string().pipe(z.coerce.number()),
+  }),
+]);
 
-export const action = effectAction(
-  Effect.gen(function* ($) {
-    const { addTodo, deleteTodo } = yield* $(TodoRepo);
-    const input = yield* $(getFormData(ActionInput));
-    switch (input._tag) {
-      case "AddTodo": {
-        yield* $(addTodo(input.title));
-        break;
-      }
-      case "DeleteTodo": {
-        yield* $(deleteTodo(input.id));
-        break;
-      }
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const input = ActionInput.parse(Object.fromEntries(await request.formData()));
+  switch (input._tag) {
+    case "AddTodo": {
+      addTodo(input);
+      break;
     }
-    return input._tag;
-  })
-);
+    case "DeleteTodo": {
+      deleteTodo(input);
+      break;
+    }
+  }
+  return input._tag;
+};
 
-export const loader = effectLoader(
-  Effect.gen(function* ($) {
-    const { getAllTodos } = yield* $(TodoRepo);
-    const result = yield* $(getAllTodos);
-    return yield* $(Schema.encode(TodoArray)(result));
-  })
-);
+export const loader = () => getAllTodos();
 
 export const meta: MetaFunction = () => {
   return [
@@ -55,7 +47,7 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-function TodoRow({ todo }: { todo: Schema.Schema.From<typeof Todo> }) {
+function TodoRow({ todo }: { todo: SerializeFrom<Todo> }) {
   const fetcher = useFetcher<typeof action>();
   const deleteTodoForm = useRef<HTMLFormElement>(null);
 
@@ -74,7 +66,7 @@ function TodoRow({ todo }: { todo: Schema.Schema.From<typeof Todo> }) {
     <li>
       <div style={{ display: "flex", gap: "0.5em" }}>
         <div>
-          {todo.title} ({todo.createdAt})
+          {todo.title} ({todo.created_at})
         </div>
         <div>
           <fetcher.Form method="post" ref={deleteTodoForm} action="?index">
