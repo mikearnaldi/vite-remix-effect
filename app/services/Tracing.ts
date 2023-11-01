@@ -23,8 +23,8 @@ export const HoneycombConfig = Config.nested("HONEYCOMB")(
 );
 
 export const TracingLive = Layer.unwrapEffect(
-  Effect.gen(function* (_) {
-    const config = yield* _(Effect.either(Effect.config(HoneycombConfig)));
+  Effect.gen(function* ($) {
+    const config = yield* $(Effect.either(Effect.config(HoneycombConfig)));
     if (Either.isLeft(config)) {
       return Layer.succeedContext(Context.empty());
     }

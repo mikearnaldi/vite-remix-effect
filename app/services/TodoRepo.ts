@@ -60,18 +60,18 @@ export const TodoRepo = Context.Tag<
 // Service Implementation
 //
 
-export const makeTodoRepo = Effect.gen(function* (_) {
-  const sql = yield* _(Sql);
+export const makeTodoRepo = Effect.gen(function* ($) {
+  const sql = yield* $(Sql);
 
   const addTodo = (title: string) =>
-    Effect.gen(function* (_) {
-      const rows = yield* _(
+    Effect.gen(function* ($) {
+      const rows = yield* $(
         Effect.orDie(
           sql`INSERT INTO todos ${sql.insert([{ title }])} RETURNING *`
         ),
         Effect.withSpan("addTodoToDb")
       );
-      const [todo] = yield* _(
+      const [todo] = yield* $(
         Effect.orDie(Schema.parse(Schema.tuple(Todo))(rows)),
         Effect.withSpan("parseResponse")
       );
@@ -83,8 +83,8 @@ export const makeTodoRepo = Effect.gen(function* (_) {
     );
 
   const deleteTodo = (id: number) =>
-    Effect.gen(function* (_) {
-      yield* _(
+    Effect.gen(function* ($) {
+      yield* $(
         Effect.orDie(sql`DELETE FROM todos WHERE id = ${id}`),
         Effect.withSpan("deleteFromDb")
       );
@@ -94,17 +94,17 @@ export const makeTodoRepo = Effect.gen(function* (_) {
       Effect.withSpan("deleteTodo")
     );
 
-  const getAllTodos = Effect.gen(function* (_) {
-    const rows = yield* _(
+  const getAllTodos = Effect.gen(function* ($) {
+    const rows = yield* $(
       Effect.orDie(sql`SELECT * from todos;`),
       Effect.withSpan("getFromDb")
     );
-    const todos = yield* _(
+    const todos = yield* $(
       Effect.orDie(Schema.parse(TodoArray)(rows)),
       Effect.withSpan("parseTodos")
     );
     if (Math.random() > 0.5) {
-      return yield* _(
+      return yield* $(
         new GetAllTodosError({
           message: "failure to get todos",
         })

@@ -20,16 +20,16 @@ const ActionInput = Schema.union(
 );
 
 export const action = effectAction(
-  Effect.gen(function* (_) {
-    const { addTodo, deleteTodo } = yield* _(TodoRepo);
-    const input = yield* _(getFormData(ActionInput));
+  Effect.gen(function* ($) {
+    const { addTodo, deleteTodo } = yield* $(TodoRepo);
+    const input = yield* $(getFormData(ActionInput));
     switch (input._tag) {
       case "AddTodo": {
-        yield* _(addTodo(input.title));
+        yield* $(addTodo(input.title));
         break;
       }
       case "DeleteTodo": {
-        yield* _(deleteTodo(input.id));
+        yield* $(deleteTodo(input.id));
         break;
       }
     }
@@ -38,10 +38,10 @@ export const action = effectAction(
 );
 
 export const loader = effectLoader(
-  Effect.gen(function* (_) {
-    const { getAllTodos } = yield* _(TodoRepo);
-    const result = yield* _(getAllTodos);
-    return yield* _(
+  Effect.gen(function* ($) {
+    const { getAllTodos } = yield* $(TodoRepo);
+    const result = yield* $(getAllTodos);
+    return yield* $(
       result,
       Schema.encode(TodoArray),
       Effect.withSpan("encodeResponse")
