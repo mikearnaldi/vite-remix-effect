@@ -1,13 +1,5 @@
 import { Schema } from "@effect/schema";
-import {
-  Context,
-  Data,
-  Duration,
-  Effect,
-  Layer,
-  Metric,
-  Schedule,
-} from "effect";
+import { Context, Data, Effect, Layer } from "effect";
 import { Sql, SqlLive } from "./Sql";
 
 //
@@ -25,23 +17,6 @@ export const TodoArray = Schema.array(Todo);
 export class GetAllTodosError extends Data.TaggedError("GetAllTodosError")<{
   message: string;
 }> {}
-
-//
-// Policies
-//
-
-const retryPolicy = Schedule.exponential("10 millis").pipe(
-  Schedule.compose(Schedule.elapsed),
-  Schedule.whileOutput(Duration.lessThan("3 seconds"))
-);
-
-//
-// Metrics
-//
-
-const getAllTodosErrorCount = Metric.counter("getAllTodosErrorCount");
-const addTodoErrorCount = Metric.counter("addTodoErrorCount");
-const deleteTodoErrorCount = Metric.counter("deleteTodoErrorCount");
 
 //
 // Service Definition
@@ -66,43 +41,20 @@ export const makeTodoRepo = Effect.gen(function* ($) {
   const addTodo = (title: string) =>
     Effect.gen(function* ($) {
       const rows = yield* $(
-        Effect.orDie(
-          sql`INSERT INTO todos ${sql.insert([{ title }])} RETURNING *`
-        ),
-        Effect.withSpan("addTodoToDb")
+        sql`INSERT INTO todos ${sql.insert([{ title }])} RETURNING *`
       );
-      const [todo] = yield* $(
-        Effect.orDie(Schema.parse(Schema.tuple(Todo))(rows)),
-        Effect.withSpan("parseResponse")
-      );
+      const [todo] = yield* $(Schema.parse(Schema.tuple(Todo))(rows));
       return todo;
-    }).pipe(
-      sql.withTransaction,
-      Metric.trackErrorWith(addTodoErrorCount, () => 1),
-      Effect.withSpan("addTodo")
-    );
+    });
 
   const deleteTodo = (id: number) =>
     Effect.gen(function* ($) {
-      yield* $(
-        Effect.orDie(sql`DELETE FROM todos WHERE id = ${id}`),
-        Effect.withSpan("deleteFromDb")
-      );
-    }).pipe(
-      sql.withTransaction,
-      Metric.trackErrorWith(deleteTodoErrorCount, () => 1),
-      Effect.withSpan("deleteTodo")
-    );
+      yield* $(sql`DELETE FROM todos WHERE id = ${id}`);
+    });
 
   const getAllTodos = Effect.gen(function* ($) {
-    const rows = yield* $(
-      Effect.orDie(sql`SELECT * from todos;`),
-      Effect.withSpan("getFromDb")
-    );
-    const todos = yield* $(
-      Effect.orDie(Schema.parse(TodoArray)(rows)),
-      Effect.withSpan("parseTodos")
-    );
+    const rows = yield* $(sql`SELECT * from todos;`);
+    const todos = yield* $(Schema.parse(TodoArray)(rows));
     if (Math.random() > 0.5) {
       return yield* $(
         new GetAllTodosError({
@@ -111,12 +63,7 @@ export const makeTodoRepo = Effect.gen(function* ($) {
       );
     }
     return todos;
-  }).pipe(
-    Metric.trackErrorWith(getAllTodosErrorCount, () => 1),
-    Effect.withSpan("getAllTodos"),
-    Effect.retry(retryPolicy),
-    Effect.withSpan("getAllTodosWithRetry")
-  );
+  });
 
   return {
     getAllTodos,
