@@ -1,7 +1,7 @@
 # Using Effect with Remix
 
 - [Remix Docs](https://remix.run/docs)
-- [Effect Docs](https://effect.website/docs)
+- [Effect Docs](https://effect.website/docs/introduction)
 - [Vite Docs](https://vitejs.dev/guide/)
 
 ## Project Goals
