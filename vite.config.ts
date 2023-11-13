@@ -8,7 +8,7 @@ export default defineConfig({
     babel({
       filter: new RegExp(/\.tsx?$/),
     }),
-    remix(),
+    remix({ ignoredRouteFiles: ["**/.*"] }),
     tsconfigPaths(),
   ],
   build: {

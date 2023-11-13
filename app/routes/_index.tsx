@@ -1,12 +1,10 @@
 import { Schema } from "@effect/schema";
-import type { MetaFunction } from "@remix-run/node";
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { json, type MetaFunction } from "@remix-run/node";
+import { Form, useLoaderData, useNavigation } from "@remix-run/react";
 import { Effect } from "effect";
-import { useEffect, useRef } from "react";
 import { getFormData } from "~/services/Remix";
 import { effectAction, effectLoader } from "~/services/Runtime";
-import type { Todo } from "~/services/TodoRepo";
-import { TodoArray, TodoRepo } from "~/services/TodoRepo";
+import { TodoArray, TodoRepo, Todo } from "~/services/TodoRepo";
 
 const ActionInput = Schema.union(
   Schema.struct({
@@ -19,31 +17,31 @@ const ActionInput = Schema.union(
   })
 );
 
+// Generator style
 export const action = effectAction(
   Effect.gen(function* ($) {
     const { addTodo, deleteTodo } = yield* $(TodoRepo);
     const input = yield* $(getFormData(ActionInput));
     switch (input._tag) {
       case "AddTodo": {
-        yield* $(addTodo(input.title));
-        break;
+        const todo = yield* $(addTodo(input.title), Effect.flatMap(Schema.encode(Todo)));
+        return json(todo)
       }
       case "DeleteTodo": {
         yield* $(deleteTodo(input.id));
-        break;
+        return input.id
       }
     }
-    return input._tag;
+
   })
 );
 
-export const loader = effectLoader(
-  Effect.gen(function* ($) {
-    const { getAllTodos } = yield* $(TodoRepo);
-    const result = yield* $(getAllTodos);
-    return yield* $(Schema.encode(TodoArray)(result));
-  })
-);
+// Pipeline style
+export const loader = effectLoader(TodoRepo.pipe(
+  Effect.flatMap(_ => _.getAllTodos),
+  Effect.flatMap(Schema.encode(TodoArray)),
+  Effect.map(json)
+));
 
 export const meta: MetaFunction = () => {
   return [
@@ -56,20 +54,6 @@ export const meta: MetaFunction = () => {
 };
 
 function TodoRow({ todo }: { todo: Schema.Schema.From<typeof Todo> }) {
-  const fetcher = useFetcher<typeof action>();
-  const deleteTodoForm = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data) {
-      switch (fetcher.data) {
-        case "DeleteTodo": {
-          deleteTodoForm.current?.reset();
-          break;
-        }
-      }
-    }
-  }, [fetcher.state, fetcher.data]);
-
   return (
     <li>
       <div style={{ display: "flex", gap: "0.5em" }}>
@@ -77,11 +61,10 @@ function TodoRow({ todo }: { todo: Schema.Schema.From<typeof Todo> }) {
           {todo.title} ({todo.createdAt})
         </div>
         <div>
-          <fetcher.Form method="post" ref={deleteTodoForm} action="?index">
-            <input type="hidden" name="_tag" value="DeleteTodo" />
+          <Form navigate={false} method="post">
             <input type="hidden" name="id" value={todo.id} />
-            <button type="submit">Done</button>
-          </fetcher.Form>
+            <button name="_tag" value="DeleteTodo" type="submit">Done</button>
+          </Form>
         </div>
       </div>
     </li>
@@ -90,19 +73,9 @@ function TodoRow({ todo }: { todo: Schema.Schema.From<typeof Todo> }) {
 
 export default function Index() {
   const todos = useLoaderData<typeof loader>();
-  const fetcher = useFetcher<typeof action>();
-  const addTodoForm = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data) {
-      switch (fetcher.data) {
-        case "AddTodo": {
-          addTodoForm.current?.reset();
-          break;
-        }
-      }
-    }
-  }, [fetcher.state, fetcher.data]);
+  const navigation = useNavigation()
+  const isAdding =
+    navigation.formData?.get("_tag") === "AddTodo"
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
@@ -113,16 +86,15 @@ export default function Index() {
         ))}
       </ul>
       <h2>Add New Todo</h2>
-      <fetcher.Form
+      <Form
+        key={String(isAdding)}
+        replace
         method="post"
-        ref={addTodoForm}
-        action="?index"
         style={{ display: "flex", gap: "0.5em" }}
       >
-        <input type="hidden" name="_tag" value="AddTodo" />
         <input type="text" size={50} name="title" />
-        <button type="submit">Create Todo</button>
-      </fetcher.Form>
+        <button name="_tag" value="AddTodo" type="submit">Create Todo</button>
+      </Form>
     </div>
   );
 }
