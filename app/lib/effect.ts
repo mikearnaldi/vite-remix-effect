@@ -1,54 +1,26 @@
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
-import { Effect, Exit, Fiber, Layer, Runtime, Scope } from "effect";
+import { Effect, ExecutionStrategy, Exit, Layer, Runtime, Scope } from "effect";
 import { pretty } from "effect/Cause";
 import { makeFiberFailure } from "effect/Runtime";
 import { ActionContext, LoaderContext } from "~/services/Remix";
 
 const runtimeSymbol = Symbol.for("@globals/Runtime");
+let disposePrevious: Effect.Effect<never, never, void>
 
 export const remixRuntime = <E, A>(layer: Layer.Layer<never, E, A>) => {
-  const fibers = new Set<Fiber.RuntimeFiber<any, any>>();
-
-  let closed = false;
-
-  const onExit = () => {
-    if (!closed) {
-      closed = true;
-      makeRuntime
-        .then(({ close }) => Effect.runPromise(close))
-        .then(() => {
-          process.exit(0);
-        });
-    }
-  };
-
-  const makeRuntime = Effect.runPromise(
+  const makeRuntime = Runtime.runPromise((globalThis as any)[runtimeSymbol] as Runtime.Runtime<Scope.Scope>)(
     Effect.gen(function* ($) {
-      const scope = yield* $(Scope.make());
-      const runtime = yield* $(Layer.toRuntime(layer), Scope.extend(scope));
-      const close = Scope.close(scope, Exit.unit);
-      const closeLoop: Effect.Effect<never, never, void> = Effect.flatMap(
-        Fiber.interruptAll(fibers),
-        () => (fibers.size > 0 ? closeLoop : Effect.unit)
-      );
-      const finalClose = Effect.flatMap(
-        Effect.flatMap(closeLoop, () => close),
-        () =>
-          Effect.sync(() => {
-            process.removeListener("SIGTERM", onExit);
-            process.removeListener("SIGINT", onExit);
-          })
-      );
-      if (runtimeSymbol in globalThis) {
-        yield* $((globalThis as any)[runtimeSymbol] as typeof finalClose);
+      const scope = yield* $(Effect.scope);
+      const runtimeScope = yield* $(Scope.fork(scope, ExecutionStrategy.sequential))
+      const runtime = yield* $(Layer.toRuntime(layer), Scope.extend(runtimeScope));
+      const dispose = Scope.close(runtimeScope, Exit.unit)
+      if (disposePrevious) {
+        yield* $(disposePrevious);
       }
-      // @ts-expect-error
-      globalThis[runtimeSymbol] = finalClose;
-      process.on("SIGINT", onExit);
-      process.on("SIGTERM", onExit);
+      disposePrevious = dispose;
       return {
         runtime,
-        close: finalClose,
+        close: dispose,
       };
     })
   );
@@ -59,9 +31,7 @@ export const remixRuntime = <E, A>(layer: Layer.Layer<never, E, A>) => {
     const { runtime } = await makeRuntime;
     return await new Promise<A>((res, rej) => {
       const fiber = Runtime.runFork(runtime)(body);
-      fibers.add(fiber);
       fiber.addObserver((exit) => {
-        fibers.delete(fiber);
         if (Exit.isSuccess(exit)) {
           res(exit.value);
         } else {
